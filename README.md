@@ -7,7 +7,7 @@ A Vercel serverless proxy backend that provides secure API endpoints for the Fit
 - **Secure API Proxy**: Keeps your Gemini API key safe on the server
 - **CORS Protection**: Strict allowlist for GitHub Pages origin only
 - **Rate Limiting**: Basic IP-based rate limiting (10 requests/minute)
-- **Image Analysis**: Powered by Gemini 1.5 Flash (latest) for fast, accurate food detection
+- **Image Analysis**: Powered by Gemini 2.0 Flash for fast, accurate food detection
 - **Structured JSON Output**: Returns nutritional data (calories, protein, carbs, fat)
 - **Health Check Endpoint**: Monitor API status and configuration
 
@@ -227,6 +227,7 @@ If you need to test from localhost during development, you'll need to temporaril
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `GEMINI_API_KEY` | Yes | Your Google Gemini API key from AI Studio |
+| `GEMINI_MODEL` | No | Gemini model to use (default: `gemini-2.0-flash`) |
 
 ## 📝 Local Development
 
@@ -270,7 +271,8 @@ The API will be available at `http://localhost:3000`
 ### "Gemini API error" or 502 errors
 - Check Vercel function logs for detailed error information
 - Verify your `GEMINI_API_KEY` is valid and active
-- The API uses `gemini-1.5-flash-latest` model - ensure it's available in your region
+- The API uses `gemini-2.0-flash` model by default - ensure it's available in your region
+- You can override the model by setting the `GEMINI_MODEL` environment variable
 - Check the error details in the response for hints about the issue
 
 ## 📄 License
