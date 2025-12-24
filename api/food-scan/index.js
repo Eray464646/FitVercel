@@ -207,7 +207,13 @@ If you see food but are uncertain about details, still set "detected" to true wi
 
   if (!response.ok) {
     // Log detailed error information server-side (without sensitive data)
-    const errorBody = await response.text();
+    let errorBody = 'Unable to read error response';
+    try {
+      errorBody = await response.text();
+    } catch (readError) {
+      console.error('Failed to read error response body:', readError.message);
+    }
+    
     const truncatedError = errorBody.length > ERROR_LOG_MAX_LENGTH 
       ? errorBody.substring(0, ERROR_LOG_MAX_LENGTH) + '...' 
       : errorBody;
@@ -218,7 +224,7 @@ If you see food but are uncertain about details, still set "detected" to true wi
       model: GEMINI_MODEL,
       requestPath: `${GEMINI_API_BASE}/${GEMINI_MODEL}:generateContent`,
       responseBodyPreview: truncatedError,
-      imageDataLength: imageBase64.length
+      imageDataLength: imageBase64.length  // Useful for debugging size-related issues
     });
     
     // Create error with additional context
