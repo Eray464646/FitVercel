@@ -7,7 +7,7 @@ A Vercel serverless proxy backend that provides secure API endpoints for the Fit
 - **Secure API Proxy**: Keeps your Gemini API key safe on the server
 - **CORS Protection**: Strict allowlist for GitHub Pages origin only
 - **Rate Limiting**: Basic IP-based rate limiting (10 requests/minute)
-- **Image Analysis**: Powered by Gemini 1.5 Flash for fast, accurate food detection
+- **Image Analysis**: Powered by Gemini 1.5 Flash (latest) for fast, accurate food detection
 - **Structured JSON Output**: Returns nutritional data (calories, protein, carbs, fat)
 - **Health Check Endpoint**: Monitor API status and configuration
 
@@ -266,6 +266,12 @@ The API will be available at `http://localhost:3000`
 ### "Image too large" error
 - Resize images before sending (recommend max 1024x1024 pixels)
 - Compress JPEG images to reduce file size
+
+### "Gemini API error" or 502 errors
+- Check Vercel function logs for detailed error information
+- Verify your `GEMINI_API_KEY` is valid and active
+- The API uses `gemini-1.5-flash-latest` model - ensure it's available in your region
+- Check the error details in the response for hints about the issue
 
 ## 📄 License
 
