@@ -11,6 +11,10 @@ const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models
 const GEMINI_MODEL = 'gemini-1.5-flash';
 
 // Rate limiting: Simple in-memory store (best-effort for serverless)
+// Note: In serverless environments, each function instance has its own memory,
+// so this provides basic protection per instance but is not globally enforced.
+// For production use with high traffic, consider using Redis or a similar
+// distributed rate limiting solution.
 const rateLimitStore = new Map();
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX_REQUESTS = 10;
@@ -201,8 +205,8 @@ If you see food but are uncertain about details, still set "detected" to true wi
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Gemini API error (${response.status}): ${errorText.substring(0, 200)}`);
+    // Don't expose detailed API errors to clients for security
+    throw new Error(`Gemini API error (${response.status})`);
   }
 
   return await response.json();
@@ -325,13 +329,14 @@ export default async function handler(req, res) {
     res.status(200).json(result);
 
   } catch (error) {
-    console.error('Error processing food scan:', error);
+    // Log error type only, not full details, to avoid exposing sensitive info
+    console.error('Error processing food scan:', error.message);
 
     // Determine appropriate error response
     if (error.message.includes('Gemini API error')) {
       res.status(502).json({
         error: 'External API error',
-        message: error.message
+        message: 'Failed to process image with AI service'
       });
     } else if (error.message.includes('fetch')) {
       res.status(500).json({
