@@ -9,6 +9,7 @@
 const ALLOWED_ORIGIN = 'https://eray464646.github.io';
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 const GEMINI_MODEL = 'gemini-1.5-flash-latest';
+const ERROR_LOG_MAX_LENGTH = 500; // Maximum length for error body preview in logs
 
 // Rate limiting: Simple in-memory store (best-effort for serverless)
 // Note: In serverless environments, each function instance has its own memory,
@@ -207,7 +208,9 @@ If you see food but are uncertain about details, still set "detected" to true wi
   if (!response.ok) {
     // Log detailed error information server-side (without sensitive data)
     const errorBody = await response.text();
-    const truncatedError = errorBody.length > 500 ? errorBody.substring(0, 500) + '...' : errorBody;
+    const truncatedError = errorBody.length > ERROR_LOG_MAX_LENGTH 
+      ? errorBody.substring(0, ERROR_LOG_MAX_LENGTH) + '...' 
+      : errorBody;
     
     console.error('Gemini API Error Details:', {
       status: response.status,
@@ -221,11 +224,16 @@ If you see food but are uncertain about details, still set "detected" to true wi
     // Create error with additional context
     const error = new Error(`Gemini API error (${response.status})`);
     error.geminiStatus = response.status;
-    error.geminiHint = response.status === 404 
-      ? 'Invalid model or endpoint' 
-      : response.status === 400 
-        ? 'Bad request - check image format and payload'
-        : 'API request failed';
+    
+    // Set helpful hint based on error status
+    if (response.status === 404) {
+      error.geminiHint = 'Invalid model or endpoint';
+    } else if (response.status === 400) {
+      error.geminiHint = 'Bad request - check image format and payload';
+    } else {
+      error.geminiHint = 'API request failed';
+    }
+    
     throw error;
   }
 
