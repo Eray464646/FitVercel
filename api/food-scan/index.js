@@ -8,7 +8,7 @@
 
 const ALLOWED_ORIGIN = 'https://eray464646.github.io';
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
-const GEMINI_MODEL = 'gemini-1.5-flash';
+const GEMINI_MODEL = 'gemini-1.5-flash-latest';
 
 // Rate limiting: Simple in-memory store (best-effort for serverless)
 // Note: In serverless environments, each function instance has its own memory,
@@ -205,8 +205,28 @@ If you see food but are uncertain about details, still set "detected" to true wi
   });
 
   if (!response.ok) {
-    // Don't expose detailed API errors to clients for security
-    throw new Error(`Gemini API error (${response.status})`);
+    // Log detailed error information server-side (without sensitive data)
+    const errorBody = await response.text();
+    const truncatedError = errorBody.length > 500 ? errorBody.substring(0, 500) + '...' : errorBody;
+    
+    console.error('Gemini API Error Details:', {
+      status: response.status,
+      statusText: response.statusText,
+      model: GEMINI_MODEL,
+      requestPath: `${GEMINI_API_BASE}/${GEMINI_MODEL}:generateContent`,
+      responseBodyPreview: truncatedError,
+      imageDataLength: imageBase64.length
+    });
+    
+    // Create error with additional context
+    const error = new Error(`Gemini API error (${response.status})`);
+    error.geminiStatus = response.status;
+    error.geminiHint = response.status === 404 
+      ? 'Invalid model or endpoint' 
+      : response.status === 400 
+        ? 'Bad request - check image format and payload'
+        : 'API request failed';
+    throw error;
   }
 
   return await response.json();
@@ -334,10 +354,20 @@ export default async function handler(req, res) {
 
     // Determine appropriate error response
     if (error.message.includes('Gemini API error')) {
-      res.status(502).json({
+      const errorResponse = {
         error: 'External API error',
         message: 'Failed to process image with AI service'
-      });
+      };
+      
+      // Add additional debugging info if available
+      if (error.geminiStatus) {
+        errorResponse.details = {
+          geminiStatus: error.geminiStatus,
+          hint: error.geminiHint
+        };
+      }
+      
+      res.status(502).json(errorResponse);
     } else if (error.message.includes('fetch')) {
       res.status(500).json({
         error: 'Network error',
