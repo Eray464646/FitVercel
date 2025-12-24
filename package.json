@@ -1,0 +1,21 @@
+{
+  "name": "fitvercel",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Vercel serverless proxy backend for FitSense AI food scanner",
+  "engines": {
+    "node": ">=18.x"
+  },
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel"
+  },
+  "keywords": [
+    "vercel",
+    "serverless",
+    "gemini",
+    "food-scanner"
+  ],
+  "author": "",
+  "license": "MIT"
+}
