@@ -8,7 +8,8 @@
 
 const ALLOWED_ORIGIN = 'https://eray464646.github.io';
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
-const GEMINI_MODEL = 'gemini-1.5-flash';
+const GEMINI_MODEL = 'gemini-1.5-flash-latest';
+const ERROR_LOG_MAX_LENGTH = 500; // Maximum length for error body preview in logs
 
 // Rate limiting: Simple in-memory store (best-effort for serverless)
 // Note: In serverless environments, each function instance has its own memory,
@@ -205,8 +206,41 @@ If you see food but are uncertain about details, still set "detected" to true wi
   });
 
   if (!response.ok) {
-    // Don't expose detailed API errors to clients for security
-    throw new Error(`Gemini API error (${response.status})`);
+    // Log detailed error information server-side (without sensitive data)
+    let errorBody = 'Unable to read error response';
+    try {
+      errorBody = await response.text();
+    } catch (readError) {
+      console.error('Failed to read error response body:', readError.message);
+    }
+    
+    const truncatedError = errorBody.length > ERROR_LOG_MAX_LENGTH 
+      ? errorBody.substring(0, ERROR_LOG_MAX_LENGTH) + '...' 
+      : errorBody;
+    
+    console.error('Gemini API Error Details:', {
+      status: response.status,
+      statusText: response.statusText,
+      model: GEMINI_MODEL,
+      requestPath: `${GEMINI_API_BASE}/${GEMINI_MODEL}:generateContent`,
+      responseBodyPreview: truncatedError,
+      imageDataLength: imageBase64.length  // Useful for debugging size-related issues
+    });
+    
+    // Create error with additional context
+    const error = new Error(`Gemini API error (${response.status})`);
+    error.geminiStatus = response.status;
+    
+    // Set helpful hint based on error status
+    if (response.status === 404) {
+      error.geminiHint = 'Invalid model or endpoint';
+    } else if (response.status === 400) {
+      error.geminiHint = 'Bad request - check image format and payload';
+    } else {
+      error.geminiHint = 'API request failed';
+    }
+    
+    throw error;
   }
 
   return await response.json();
@@ -334,10 +368,20 @@ export default async function handler(req, res) {
 
     // Determine appropriate error response
     if (error.message.includes('Gemini API error')) {
-      res.status(502).json({
+      const errorResponse = {
         error: 'External API error',
         message: 'Failed to process image with AI service'
-      });
+      };
+      
+      // Add additional debugging info if available
+      if (error.geminiStatus) {
+        errorResponse.details = {
+          geminiStatus: error.geminiStatus,
+          hint: error.geminiHint
+        };
+      }
+      
+      res.status(502).json(errorResponse);
     } else if (error.message.includes('fetch')) {
       res.status(500).json({
         error: 'Network error',
