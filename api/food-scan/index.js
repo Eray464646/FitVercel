@@ -8,7 +8,7 @@
 
 const ALLOWED_ORIGIN = 'https://eray464646.github.io';
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
-const GEMINI_MODEL = 'gemini-1.5-flash-latest';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
 const ERROR_LOG_MAX_LENGTH = 500; // Maximum length for error body preview in logs
 
 // Rate limiting: Simple in-memory store (best-effort for serverless)
